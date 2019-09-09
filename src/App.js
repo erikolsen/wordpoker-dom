@@ -17,24 +17,39 @@ const Card = ({letter, value, held, clickHandler})=> {
   )
 }
 
+const WordList = ({wordlist, average, present})=> {
+  const visibility = present ? 'visible' : 'invisible'
+  return (
+    <div className={`m-4 ${visibility}`}>
+      <div className='flex justify-between'>
+        <h1 className='underline text-2xl'>Word List</h1>
+        <button onClick={() => window.location.reload()} className='border border-black p-2 text-xl'>Next Hand</button>
+      </div>
+      <h2 className='text-xl'>Average: <span>{average}</span></h2>
+        {wordlist.map((el, i)=> <p key={i} className='text-xl wordlist'>{el}</p>)}
+    </div>
+  )
+}
+
 const DrawButton = ({draw})=> {
   return (
     <button onClick={() => draw()} className='border border-black p-2 m-4 text-xl' id='draw'>Draw</button>
   )
 }
 
-const Selection = ({cards, submit})=> {
+const Selection = ({cards, submit, undo, present})=> {
   let word = cards.map(el=> el.letter).join('')
   let total = cards.reduce((total, el) => total += parseInt(el.value), 0)
+  const visibility = present ? 'visible' : 'hidden'
+
   return (
-    <div>
+    <div className={`${visibility}`}>
       <div className='m-4 text-2xl'>
-        <p>Selection: <span id='selection'>{word}</span></p>
+        <p>Selection: <span id='selection'>{word}</span><span onClick={()=> undo()} id='undo' className='text-sm text-red-400'> UNDO</span></p>
         <p>Total: <span id='total'>{total}</span></p>
       </div>
       <div className='flex justify-between'>
         <button onClick={() => submit()} className='border border-black p-2 m-4 text-xl' id='submit'>Submit</button>
-        <button onClick={() => window.location.reload()} className='border border-black p-2 m-4 text-xl'>Next Hand</button>
       </div>
     </div>
   )
@@ -56,6 +71,7 @@ class Rack extends React.Component {
     this.hold = this.hold.bind(this)
     this.select = this.select.bind(this)
     this.submit = this.submit.bind(this)
+    this.undo = this.undo.bind(this)
   }
 
   componentDidMount(){
@@ -100,6 +116,12 @@ class Rack extends React.Component {
       .then(data => this.handleResponse(data) )
   }
 
+  undo(){
+    let selections = this.state.selections
+    selections.pop()
+    this.setState({selections: selections})
+  }
+
   render(){
     let clickHandler = this.state.readyToSelect ? this.select : this.hold
     return (
@@ -112,12 +134,11 @@ class Rack extends React.Component {
                 value={card.value}
                 held={card.held} />) }
         </div>
-        { this.state.readyToSelect ? <Selection cards={this.state.selections} submit={this.submit} /> : <DrawButton draw={()=> this.draw()} /> }
-        <div className='m-4'>
-          <h1 className='underline text-2xl'>Word List</h1>
-          <h2 className='text-xl'>Average: <span>{this.state.average}</span></h2>
-          {this.state.wordlist.map((el, i)=> <p key={i} className='text-xl wordlist'>{el}</p>)}
-        </div>
+        { this.state.readyToSelect ? <Selection present={this.state.wordlist.length === 0} cards={this.state.selections} submit={this.submit} undo={this.undo}/> : <DrawButton draw={()=> this.draw()} /> }
+        <WordList wordlist={this.state.wordlist}
+          average={this.state.average}
+          present={this.state.wordlist.length > 0}
+        />
       </div>
     )
   }
@@ -144,6 +165,12 @@ function App() {
         </h1>
         <p className='text-white text-2xl p-2'>Coins: <span id='coins'>{value}</span></p>
       </header>
+      <ul className='m-4'>
+        <li>Must get at least 10 points to win</li>
+        <li>5 letter word pays 2X</li>
+        <li>6 letter word pays 3X</li>
+        <li>7 letter word pays 5X</li>
+      </ul>
       <Rack changeCoins={changeCoins} coins={value}/>
     </div>
   );
